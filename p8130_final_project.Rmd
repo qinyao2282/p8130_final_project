@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library("leaps")
 ```
 
 
@@ -16,9 +17,8 @@ library(tidyverse)
 ```{r import_data}
 #45207
 
-cancer_data = read_csv("./data/Cancer_Registry.csv")
-
-
+cancer_data = read_csv("./data/Cancer_Registry.csv") 
+ 
 cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %>% data.frame() %>%
   t() %>% data.frame()
 
@@ -40,10 +40,13 @@ cancer_data_analysis = cancer_data %>%
   separate(geography, c("county", "state"), sep = ",") %>%
   
   #remove variables with a lot of na
-  select (-pct_some_col18_24, - pct_employed16_over, - pct_private_coverage_alone) %>% 
+  select(-pct_some_col18_24, - pct_employed16_over, - pct_private_coverage_alone, -med_income) %>% 
   
-  #remove unrelated variables
-  select(-binned_inc, -pct_no_hs18_24)
+    #remove unrelated variables
+  select(-binned_inc, -pct_no_hs18_24) %>% 
+ 
+  select(target_death_rate, everything())
+  
   
   
 cancer_data_analysis %>% 
@@ -55,9 +58,46 @@ cancer_data_analysis %>%
   cor() %>% 
   knitr::kable()
 
+#From the observation, we find that there is linear relationship between avg_ann_count and avg_deaths_per_year, avg_deaths_per_year and pop_est_2015 this migh cause multicolinearity. remove avg_death_per_year
+
+cancer_data_analysis = cancer_data_analysis %>% 
+  select(target_death_rate, county, everything()) %>% 
+  select(-state, - county)
+
+##
+##cancer_data_analysis = cancer_data%>%
+ 
+##   column_to_rownames(var = "geography")
+##cancer_data_final <- cancer_data_analysis[,-2]
 
 
 
+attach(cancer_data_analysis)
 
+summary(cancer_data_analysis)
 ```
 
+
+```{r}
+data_analysis = cancer_data_analysis %>% 
+  mutate(white_cat = ifelse(pct_white >= median(pct_white), 1, 0),
+         black_cat = ifelse(pct_black >= median(pct_black), 1, 0),
+         asian_cat = ifelse(pct_asian >= median(pct_asian), 1, 0),
+         other_cat = ifelse(pct_other_race >= median(pct_other_race), 1, 0),
+         married_household = ifelse(pct_married_households >= median(pct_married_households), 1, 0))
+
+data_analysis = data_analysis %>% 
+  select(-pct_asian, -pct_black, -pct_white,-pct_other_race)
+```
+
+
+
+```{r}
+multi.fit = lm(target_death_rate ~., data = cancer_data_analysis)
+summary(multi.fit)
+
+multi.fit = lm(target_death_rate ~., data = cancer_data_analysis)
+step(multi.fit, direction = "backward")
+```
+
+#19-21 
