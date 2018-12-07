@@ -5,20 +5,21 @@ date: "12/6/2018"
 output: html_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 library(tidyverse)
+library(faraway)
+library(leaps)
+library(caret)
+library(boot)
+library(broom)
 ```
 
-
-
 ```{r import_data}
-#45207
 
-cancer_data = read_csv("./data/Cancer_Registry.csv")
-
-
+cancer_data = read_csv("./data/Cancer_Registry.csv") 
+ 
 cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %>% data.frame() %>%
   t() %>% data.frame()
 
@@ -37,13 +38,17 @@ cancer_data_analysis = cancer_data %>%
   janitor::clean_names() %>% 
   mutate(med_income = as.numeric(med_income) ) %>% 
   mutate(income_cat = ifelse(med_income >= 45207, 1, 0)) %>% 
+  mutate(age_cat = ifelse(median_age >= 45, 1, 0)) %>%
   separate(geography, c("county", "state"), sep = ",") %>%
   
   #remove variables with a lot of na
-  select (-pct_some_col18_24, - pct_employed16_over, - pct_private_coverage_alone) %>% 
+  select(-pct_some_col18_24, -pct_employed16_over, -pct_private_coverage_alone, -med_income) %>% 
   
-  #remove unrelated variables
-  select(-binned_inc, -pct_no_hs18_24)
+    #remove unrelated variables
+  select(-binned_inc, -pct_no_hs18_24) %>% 
+ 
+  select(target_death_rate, everything())
+  
   
   
 cancer_data_analysis %>% 
@@ -55,9 +60,42 @@ cancer_data_analysis %>%
   cor() %>% 
   knitr::kable()
 
+#From the observation, we find that there is linear relationship between avg_ann_count and avg_deaths_per_year, avg_deaths_per_year and pop_est_2015 this migh cause multicolinearity. remove avg_death_per_year
+
+cancer_data_analysis = cancer_data_analysis %>% 
+  select(target_death_rate, county, everything()) %>% 
+  select(-state, -county)
+
+##
+##cancer_data_analysis = cancer_data%>%
+ 
+##   column_to_rownames(var = "geography")
+##cancer_data_final <- cancer_data_analysis[,-2]
 
 
 
+attach(cancer_data_analysis)
+
+summary(cancer_data_analysis)
+```
+
+
+```{r}
+cancer_s = cancer_data_analysis %>%
+  select(target_death_rate, avg_ann_count, avg_deaths_per_year, incidence_rate, study_per_cap, pop_est2015, income_cat, age_cat, pct_private_coverage, pct_asian, percent_married)
+
+criterion_subset = regsubsets(target_death_rate ~ ., data = cancer_s, nvmax = 32)
+   (rs = summary(criterion_subset))
+
+par(mar = c(4,4,1,1))
+par(mfrow = c(1,2))
+
+plot(2:11, rs$cp, xlab = "No of parameters", ylab = "Cp Statistic")
+abline(0,1)
+
+plot(2:11, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
+
+lm(target_death_rate ~ ., data = cancer_s) %>% summary()
 
 ```
 
