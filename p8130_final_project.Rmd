@@ -6,6 +6,9 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+
+#Install the packges.
+
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(faraway)
@@ -16,7 +19,7 @@ library(broom)
 ```
 
 ```{r import_data}
-
+#Import data
 cancer_data = read_csv("./data/Cancer_Registry.csv") 
  
 cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %>% data.frame() %>%
@@ -34,8 +37,8 @@ cancer_na
 cancer_data_analysis = cancer_data %>% 
   janitor::clean_names() %>% 
   mutate(med_income = as.numeric(med_income) ) %>% 
-  mutate(income_cat = ifelse(med_income >= 47063, 1, 0)) %>% 
-  mutate(age_cat = ifelse(median_age >= 45, 1, 0)) %>%
+  mutate(income_cat = ifelse(med_income >= mean(med_income), 1, 0)) %>% 
+  mutate(age_cat = ifelse(median_age >= mean(median_age), 1, 0)) %>%
   separate(geography, c("county", "state"), sep = ",") %>%
   
   #remove variables with a lot of na
