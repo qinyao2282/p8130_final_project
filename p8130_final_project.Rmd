@@ -5,3 +5,89 @@ date: "12/6/2018"
 output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(faraway)
+library(leaps)
+library(caret)
+library(boot)
+library(broom)
+```
+
+```{r import_data}
+
+cancer_data = read_csv("./data/Cancer_Registry.csv") 
+ 
+cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %>% data.frame() %>%
+  t() %>% data.frame()
+
+colnames(cancer_na) = "na_counts"
+
+cancer_na = cancer_na %>% mutate(variable_name = row.names(cancer_na)) %>% select(2, 1) %>%
+  filter(na_counts > 0) %>% knitr::kable()
+cancer_na
+
+```
+
+```{r}
+cancer_data_analysis = cancer_data %>% 
+  janitor::clean_names() %>% 
+  mutate(med_income = as.numeric(med_income) ) %>% 
+  mutate(income_cat = ifelse(med_income >= 47063, 1, 0)) %>% 
+  mutate(age_cat = ifelse(median_age >= 45, 1, 0)) %>%
+  separate(geography, c("county", "state"), sep = ",") %>%
+  
+  #remove variables with a lot of na
+  select(-pct_some_col18_24, -pct_employed16_over, -pct_private_coverage_alone, -med_income) %>% 
+  
+    #remove unrelated variables
+  select(-binned_inc, -pct_no_hs18_24) %>% 
+ 
+  select(target_death_rate, everything())
+  
+  
+  
+cancer_data_analysis %>% 
+  select(-state, -county) %>% 
+ skimr::skim()
+
+cancer_data_analysis %>% 
+  select(-state, -county) %>% 
+  cor() %>% 
+  knitr::kable()
+
+#From the observation, we find that there is linear relationship between avg_ann_count and avg_deaths_per_year, avg_deaths_per_year and pop_est_2015 this migh cause multicolinearity. remove avg_death_per_year
+
+cancer_data_analysis = cancer_data_analysis %>% 
+  select(target_death_rate, county, everything()) %>% 
+  select(-state, -county)
+
+##
+##cancer_data_analysis = cancer_data%>%
+ 
+##   column_to_rownames(var = "geography")
+##cancer_data_final <- cancer_data_analysis[,-2]
+
+
+
+attach(cancer_data_analysis)
+
+summary(cancer_data_analysis)
+```
+
+
+```{r}
+cancer_s = cancer_data_analysis %>%
+  select(target_death_rate, avg_ann_count, incidence_rate, study_per_cap, income_cat, age_cat, pct_private_coverage, pct_asian, percent_married, avg_household_size)
+
+cor(cancer_s) %>% knitr::kable()
+```
+
+
+###Model Diagnostic
+
+```{r}
+
+```
+
