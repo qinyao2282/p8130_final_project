@@ -128,7 +128,8 @@ $(document).ready(function () {
 </div>
 
 
-<pre class="r"><code>cancer_data = read_csv(&quot;./data/Cancer_Registry.csv&quot;) </code></pre>
+<pre class="r"><code>#Import data
+cancer_data = read_csv(&quot;./data/Cancer_Registry.csv&quot;) </code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(
 ##   .default = col_double(),
@@ -139,11 +140,14 @@ $(document).ready(function () {
 ##   Geography = col_character()
 ## )</code></pre>
 <pre><code>## See spec(...) for full column specifications.</code></pre>
-<pre class="r"><code>cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %&gt;% data.frame() %&gt;%
+<pre class="r"><code>#Count na, modify the na table to show the variable with NAs. 
+cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %&gt;% data.frame() %&gt;%
   t() %&gt;% data.frame()
 
+#Add column names.
 colnames(cancer_na) = &quot;na_counts&quot;
 
+#Make a table for na. 
 cancer_na = cancer_na %&gt;% mutate(variable_name = row.names(cancer_na)) %&gt;% select(2, 1) %&gt;%
   filter(na_counts &gt; 0) %&gt;% knitr::kable()
 cancer_na</code></pre>
@@ -169,11 +173,18 @@ cancer_na</code></pre>
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>cancer_data_analysis = cancer_data %&gt;% 
+<pre class="r"><code>#Tidy the data set. 
+cancer_data_analysis = cancer_data %&gt;% 
   janitor::clean_names() %&gt;% 
+  
+  #Make income a dummy variable by divide up by mean of income. 
   mutate(med_income = as.numeric(med_income) ) %&gt;% 
-  mutate(income_cat = ifelse(med_income &gt;= 47063, 1, 0)) %&gt;% 
-  mutate(age_cat = ifelse(median_age &gt;= 45, 1, 0)) %&gt;%
+  mutate(income_cat = ifelse(med_income &gt;= mean(med_income), 1, 0)) %&gt;% 
+  
+  #Divide up ages by mean of age. 
+  mutate(age_cat = ifelse(median_age &gt;= mean(median_age), 1, 0)) %&gt;%
+  
+  #Separate the county name and the state name. 
   separate(geography, c(&quot;county&quot;, &quot;state&quot;), sep = &quot;,&quot;) %&gt;%
   
   #remove variables with a lot of na
@@ -182,10 +193,11 @@ cancer_na</code></pre>
     #remove unrelated variables
   select(-binned_inc, -pct_no_hs18_24) %&gt;% 
  
+  #Make the y at the first column. 
   select(target_death_rate, everything())
   
   
-  
+ #Skim over all the variables.  
 cancer_data_analysis %&gt;% 
   select(-state, -county) %&gt;% 
  skimr::skim()</code></pre>
@@ -203,7 +215,7 @@ cancer_data_analysis %&gt;%
 ## 
 ## ── Variable type:numeric ───────────────────────────────────────────
 ##                   variable missing complete    n   mean      sd      p0
-##                    age_cat       0     3047 3047   0.2     0.4    0    
+##                    age_cat       0     3047 3047   0.18    0.39   0    
 ##              avg_ann_count       0     3047 3047 606.34 1416.36   6    
 ##         avg_household_size       0     3047 3047   2.48    0.43   0.022
 ##                 birth_rate       0     3047 3047   5.64    1.99   0    
@@ -328,7 +340,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.2933253</td>
 <td align="right">-0.0874070</td>
 <td align="right">-0.3682438</td>
-<td align="right">-0.1135366</td>
+<td align="right">-0.1112003</td>
 </tr>
 <tr class="even">
 <td>avg_ann_count</td>
@@ -360,7 +372,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.1062209</td>
 <td align="right">-0.0345076</td>
 <td align="right">0.2192454</td>
-<td align="right">-0.0781669</td>
+<td align="right">-0.0743736</td>
 </tr>
 <tr class="odd">
 <td>avg_deaths_per_year</td>
@@ -392,7 +404,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.1602661</td>
 <td align="right">-0.0744200</td>
 <td align="right">0.1669993</td>
-<td align="right">-0.1002617</td>
+<td align="right">-0.0939190</td>
 </tr>
 <tr class="even">
 <td>incidence_rate</td>
@@ -424,7 +436,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.1521763</td>
 <td align="right">-0.1181813</td>
 <td align="right">0.0080758</td>
-<td align="right">-0.0756478</td>
+<td align="right">-0.0780863</td>
 </tr>
 <tr class="odd">
 <td>pop_est2015</td>
@@ -456,7 +468,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.1279795</td>
 <td align="right">-0.0577402</td>
 <td align="right">0.1763925</td>
-<td align="right">-0.1056503</td>
+<td align="right">-0.1000458</td>
 </tr>
 <tr class="even">
 <td>poverty_percent</td>
@@ -488,7 +500,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.6049528</td>
 <td align="right">-0.0122825</td>
 <td align="right">-0.6679347</td>
-<td align="right">-0.1147685</td>
+<td align="right">-0.1051837</td>
 </tr>
 <tr class="odd">
 <td>study_per_cap</td>
@@ -520,7 +532,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.0517356</td>
 <td align="right">0.0106762</td>
 <td align="right">0.0619825</td>
-<td align="right">-0.0082125</td>
+<td align="right">-0.0249803</td>
 </tr>
 <tr class="even">
 <td>median_age</td>
@@ -552,7 +564,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.0145036</td>
 <td align="right">-0.0082762</td>
 <td align="right">-0.0130243</td>
-<td align="right">0.2743377</td>
+<td align="right">0.2824866</td>
 </tr>
 <tr class="odd">
 <td>median_age_male</td>
@@ -584,7 +596,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.2222777</td>
 <td align="right">-0.1041052</td>
 <td align="right">-0.0768562</td>
-<td align="right">0.6786623</td>
+<td align="right">0.6672081</td>
 </tr>
 <tr class="even">
 <td>median_age_female</td>
@@ -616,7 +628,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.1615068</td>
 <td align="right">-0.0988126</td>
 <td align="right">-0.1265069</td>
-<td align="right">0.6390183</td>
+<td align="right">0.6290699</td>
 </tr>
 <tr class="odd">
 <td>avg_household_size</td>
@@ -648,7 +660,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.0914504</td>
 <td align="right">0.0759176</td>
 <td align="right">0.0635961</td>
-<td align="right">-0.2150894</td>
+<td align="right">-0.2154383</td>
 </tr>
 <tr class="even">
 <td>percent_married</td>
@@ -680,7 +692,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.8702605</td>
 <td align="right">0.1414039</td>
 <td align="right">0.3050008</td>
-<td align="right">0.2792967</td>
+<td align="right">0.2715222</td>
 </tr>
 <tr class="odd">
 <td>pct_hs18_24</td>
@@ -712,7 +724,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.1200402</td>
 <td align="right">0.0582269</td>
 <td align="right">-0.1565607</td>
-<td align="right">0.1112456</td>
+<td align="right">0.1085555</td>
 </tr>
 <tr class="even">
 <td>pct_bach_deg18_24</td>
@@ -744,7 +756,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.0001044</td>
 <td align="right">-0.1250735</td>
 <td align="right">0.3484920</td>
-<td align="right">-0.0080293</td>
+<td align="right">-0.0132222</td>
 </tr>
 <tr class="odd">
 <td>pct_hs25_over</td>
@@ -776,7 +788,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.0621759</td>
 <td align="right">0.0166003</td>
 <td align="right">-0.3440493</td>
-<td align="right">0.0803968</td>
+<td align="right">0.0756209</td>
 </tr>
 <tr class="even">
 <td>pct_bach_deg25_over</td>
@@ -808,7 +820,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.0981339</td>
 <td align="right">-0.0879403</td>
 <td align="right">0.5324528</td>
-<td align="right">0.0016461</td>
+<td align="right">0.0029192</td>
 </tr>
 <tr class="odd">
 <td>pct_unemployed16_over</td>
@@ -840,7 +852,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.4696090</td>
 <td align="right">-0.0679063</td>
 <td align="right">-0.4091215</td>
-<td align="right">-0.0936732</td>
+<td align="right">-0.0909133</td>
 </tr>
 <tr class="even">
 <td>pct_private_coverage</td>
@@ -872,7 +884,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.4346401</td>
 <td align="right">-0.0404366</td>
 <td align="right">0.6204200</td>
-<td align="right">0.0417390</td>
+<td align="right">0.0353271</td>
 </tr>
 <tr class="odd">
 <td>pct_emp_priv_coverage</td>
@@ -904,7 +916,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.3225693</td>
 <td align="right">-0.0938780</td>
 <td align="right">0.6217880</td>
-<td align="right">-0.2449319</td>
+<td align="right">-0.2519667</td>
 </tr>
 <tr class="even">
 <td>pct_public_coverage</td>
@@ -936,7 +948,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.3621705</td>
 <td align="right">-0.0305308</td>
 <td align="right">-0.6166456</td>
-<td align="right">0.2708292</td>
+<td align="right">0.2704758</td>
 </tr>
 <tr class="odd">
 <td>pct_public_coverage_alone</td>
@@ -968,7 +980,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.4739939</td>
 <td align="right">-0.0047527</td>
 <td align="right">-0.6001150</td>
-<td align="right">-0.0279246</td>
+<td align="right">-0.0265985</td>
 </tr>
 <tr class="even">
 <td>pct_white</td>
@@ -1000,7 +1012,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.5967711</td>
 <td align="right">-0.0089581</td>
 <td align="right">0.1640335</td>
-<td align="right">0.2167147</td>
+<td align="right">0.2093192</td>
 </tr>
 <tr class="odd">
 <td>pct_black</td>
@@ -1032,7 +1044,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.5735925</td>
 <td align="right">-0.0678048</td>
 <td align="right">-0.2256673</td>
-<td align="right">-0.1639215</td>
+<td align="right">-0.1625032</td>
 </tr>
 <tr class="even">
 <td>pct_asian</td>
@@ -1064,7 +1076,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.0866020</td>
 <td align="right">-0.0619470</td>
 <td align="right">0.2440280</td>
-<td align="right">-0.1345680</td>
+<td align="right">-0.1274637</td>
 </tr>
 <tr class="odd">
 <td>pct_other_race</td>
@@ -1096,7 +1108,7 @@ cancer_data_analysis %&gt;%
 <td align="right">-0.0273523</td>
 <td align="right">0.0598295</td>
 <td align="right">0.0773846</td>
-<td align="right">-0.1311573</td>
+<td align="right">-0.1250206</td>
 </tr>
 <tr class="even">
 <td>pct_married_households</td>
@@ -1128,7 +1140,7 @@ cancer_data_analysis %&gt;%
 <td align="right">1.0000000</td>
 <td align="right">0.1022633</td>
 <td align="right">0.3540216</td>
-<td align="right">0.1057453</td>
+<td align="right">0.0989325</td>
 </tr>
 <tr class="odd">
 <td>birth_rate</td>
@@ -1160,7 +1172,7 @@ cancer_data_analysis %&gt;%
 <td align="right">0.1022633</td>
 <td align="right">1.0000000</td>
 <td align="right">0.0273758</td>
-<td align="right">-0.0305763</td>
+<td align="right">-0.0223198</td>
 </tr>
 <tr class="even">
 <td>income_cat</td>
@@ -1192,38 +1204,38 @@ cancer_data_analysis %&gt;%
 <td align="right">0.3540216</td>
 <td align="right">0.0273758</td>
 <td align="right">1.0000000</td>
-<td align="right">-0.0629923</td>
+<td align="right">-0.0768851</td>
 </tr>
 <tr class="odd">
 <td>age_cat</td>
-<td align="right">-0.1135366</td>
-<td align="right">-0.0781669</td>
-<td align="right">-0.1002617</td>
-<td align="right">-0.0756478</td>
-<td align="right">-0.1056503</td>
-<td align="right">-0.1147685</td>
-<td align="right">-0.0082125</td>
-<td align="right">0.2743377</td>
-<td align="right">0.6786623</td>
-<td align="right">0.6390183</td>
-<td align="right">-0.2150894</td>
-<td align="right">0.2792967</td>
-<td align="right">0.1112456</td>
-<td align="right">-0.0080293</td>
-<td align="right">0.0803968</td>
-<td align="right">0.0016461</td>
-<td align="right">-0.0936732</td>
-<td align="right">0.0417390</td>
-<td align="right">-0.2449319</td>
-<td align="right">0.2708292</td>
-<td align="right">-0.0279246</td>
-<td align="right">0.2167147</td>
-<td align="right">-0.1639215</td>
-<td align="right">-0.1345680</td>
-<td align="right">-0.1311573</td>
-<td align="right">0.1057453</td>
-<td align="right">-0.0305763</td>
-<td align="right">-0.0629923</td>
+<td align="right">-0.1112003</td>
+<td align="right">-0.0743736</td>
+<td align="right">-0.0939190</td>
+<td align="right">-0.0780863</td>
+<td align="right">-0.1000458</td>
+<td align="right">-0.1051837</td>
+<td align="right">-0.0249803</td>
+<td align="right">0.2824866</td>
+<td align="right">0.6672081</td>
+<td align="right">0.6290699</td>
+<td align="right">-0.2154383</td>
+<td align="right">0.2715222</td>
+<td align="right">0.1085555</td>
+<td align="right">-0.0132222</td>
+<td align="right">0.0756209</td>
+<td align="right">0.0029192</td>
+<td align="right">-0.0909133</td>
+<td align="right">0.0353271</td>
+<td align="right">-0.2519667</td>
+<td align="right">0.2704758</td>
+<td align="right">-0.0265985</td>
+<td align="right">0.2093192</td>
+<td align="right">-0.1625032</td>
+<td align="right">-0.1274637</td>
+<td align="right">-0.1250206</td>
+<td align="right">0.0989325</td>
+<td align="right">-0.0223198</td>
+<td align="right">-0.0768851</td>
 <td align="right">1.0000000</td>
 </tr>
 </tbody>
@@ -1298,7 +1310,7 @@ summary(cancer_data_analysis)</code></pre>
 ##  Min.   :22.99          Min.   : 0.000   Min.   :0.0000   Min.   :0.0000  
 ##  1st Qu.:47.76          1st Qu.: 4.521   1st Qu.:0.0000   1st Qu.:0.0000  
 ##  Median :51.67          Median : 5.381   Median :0.0000   Median :0.0000  
-##  Mean   :51.24          Mean   : 5.640   Mean   :0.4306   Mean   :0.1989  
+##  Mean   :51.24          Mean   : 5.640   Mean   :0.4306   Mean   :0.1844  
 ##  3rd Qu.:55.40          3rd Qu.: 6.494   3rd Qu.:1.0000   3rd Qu.:0.0000  
 ##  Max.   :78.08          Max.   :21.326   Max.   :1.0000   Max.   :1.0000</code></pre>
 <pre class="r"><code>cancer_s = cancer_data_analysis %&gt;%
@@ -1329,7 +1341,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">0.4494317</td>
 <td align="right">-0.0222850</td>
 <td align="right">-0.3682438</td>
-<td align="right">-0.1135366</td>
+<td align="right">-0.1112003</td>
 <td align="right">-0.3860655</td>
 <td align="right">-0.1863311</td>
 <td align="right">-0.2668205</td>
@@ -1342,7 +1354,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">0.0735532</td>
 <td align="right">0.0820714</td>
 <td align="right">0.2192454</td>
-<td align="right">-0.0781669</td>
+<td align="right">-0.0743736</td>
 <td align="right">0.1322444</td>
 <td align="right">0.4350712</td>
 <td align="right">-0.1061077</td>
@@ -1355,7 +1367,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">1.0000000</td>
 <td align="right">0.0772826</td>
 <td align="right">0.0080758</td>
-<td align="right">-0.0756478</td>
+<td align="right">-0.0780863</td>
 <td align="right">0.1051743</td>
 <td align="right">-0.0081234</td>
 <td align="right">-0.1195245</td>
@@ -1368,7 +1380,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">0.0772826</td>
 <td align="right">1.0000000</td>
 <td align="right">0.0619825</td>
-<td align="right">-0.0082125</td>
+<td align="right">-0.0249803</td>
 <td align="right">0.0925447</td>
 <td align="right">0.0625431</td>
 <td align="right">-0.0381433</td>
@@ -1381,7 +1393,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">0.0080758</td>
 <td align="right">0.0619825</td>
 <td align="right">1.0000000</td>
-<td align="right">-0.0629923</td>
+<td align="right">-0.0768851</td>
 <td align="right">0.6204200</td>
 <td align="right">0.2440280</td>
 <td align="right">0.3050008</td>
@@ -1389,16 +1401,16 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 </tr>
 <tr class="even">
 <td>age_cat</td>
-<td align="right">-0.1135366</td>
-<td align="right">-0.0781669</td>
-<td align="right">-0.0756478</td>
-<td align="right">-0.0082125</td>
-<td align="right">-0.0629923</td>
+<td align="right">-0.1112003</td>
+<td align="right">-0.0743736</td>
+<td align="right">-0.0780863</td>
+<td align="right">-0.0249803</td>
+<td align="right">-0.0768851</td>
 <td align="right">1.0000000</td>
-<td align="right">0.0417390</td>
-<td align="right">-0.1345680</td>
-<td align="right">0.2792967</td>
-<td align="right">-0.2150894</td>
+<td align="right">0.0353271</td>
+<td align="right">-0.1274637</td>
+<td align="right">0.2715222</td>
+<td align="right">-0.2154383</td>
 </tr>
 <tr class="odd">
 <td>pct_private_coverage</td>
@@ -1407,7 +1419,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">0.1051743</td>
 <td align="right">0.0925447</td>
 <td align="right">0.6204200</td>
-<td align="right">0.0417390</td>
+<td align="right">0.0353271</td>
 <td align="right">1.0000000</td>
 <td align="right">0.1893318</td>
 <td align="right">0.4494516</td>
@@ -1420,7 +1432,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">-0.0081234</td>
 <td align="right">0.0625431</td>
 <td align="right">0.2440280</td>
-<td align="right">-0.1345680</td>
+<td align="right">-0.1274637</td>
 <td align="right">0.1893318</td>
 <td align="right">1.0000000</td>
 <td align="right">-0.1486913</td>
@@ -1433,7 +1445,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">-0.1195245</td>
 <td align="right">-0.0381433</td>
 <td align="right">0.3050008</td>
-<td align="right">0.2792967</td>
+<td align="right">0.2715222</td>
 <td align="right">0.4494516</td>
 <td align="right">-0.1486913</td>
 <td align="right">1.0000000</td>
@@ -1446,7 +1458,7 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 <td align="right">-0.1184000</td>
 <td align="right">-0.0040709</td>
 <td align="right">0.0635961</td>
-<td align="right">-0.2150894</td>
+<td align="right">-0.2154383</td>
 <td align="right">-0.1443906</td>
 <td align="right">0.1315354</td>
 <td align="right">-0.1005117</td>
@@ -1454,6 +1466,37 @@ cor(cancer_s) %&gt;% knitr::kable()</code></pre>
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>skimr::skim(cancer_s)</code></pre>
+<pre><code>## Skim summary statistics
+##  n obs: 3047 
+##  n variables: 10 
+## 
+## ── Variable type:numeric ───────────────────────────────────────────
+##              variable missing complete    n   mean      sd      p0    p25
+##               age_cat       0     3047 3047   0.18    0.39   0       0   
+##         avg_ann_count       0     3047 3047 606.34 1416.36   6      76   
+##    avg_household_size       0     3047 3047   2.48    0.43   0.022   2.37
+##        incidence_rate       0     3047 3047 448.27   54.56 201.3   420.3 
+##            income_cat       0     3047 3047   0.43    0.5    0       0   
+##             pct_asian       0     3047 3047   1.25    2.61   0       0.25
+##  pct_private_coverage       0     3047 3047  64.35   10.65  22.3    57.2 
+##       percent_married       0     3047 3047  51.77    6.9   23.1    47.75
+##         study_per_cap       0     3047 3047 155.4   529.63   0       0   
+##     target_death_rate       0     3047 3047 178.66   27.75  59.7   161.2 
+##     p50    p75     p100     hist
+##    0      0        1    ▇▁▁▁▁▁▁▂
+##  171    518    38150    ▇▁▁▁▁▁▁▁
+##    2.5    2.63     3.97 ▁▁▁▁▇▇▁▁
+##  453.55 480.85  1206.9  ▁▇▇▁▁▁▁▁
+##    0      1        1    ▇▁▁▁▁▁▁▆
+##    0.55   1.22    42.62 ▇▁▁▁▁▁▁▁
+##   65.1   72.1     92.3  ▁▁▂▅▇▇▅▁
+##   52.4   56.4     72.5  ▁▁▁▅▇▇▂▁
+##    0     83.65  9762.31 ▇▁▁▁▁▁▁▁
+##  178.1  195.2    362.8  ▁▁▆▇▂▁▁▁</code></pre>
+<div id="model-diagnostic" class="section level3">
+<h3>Model Diagnostic</h3>
+</div>
 
 
 
