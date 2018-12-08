@@ -49,11 +49,11 @@ cancer_data_analysis = cancer_data %>%
   #Divide up ages by mean of age. 
   mutate(age_cat = ifelse(median_age >= mean(median_age), 1, 0)) %>%
   
-  #remove variables with a lot of na
-  select(-pct_some_col18_24, -pct_employed16_over, -pct_private_coverage_alone, -med_income) %>% 
+  #remove variables with a lot of na, pct_employed16_over do not have a lot, so we decide to keep it. 
+  select(-pct_some_col18_24, -pct_private_coverage_alone, -med_income) %>% 
   
     #remove unrelated variables
-  select(-binned_inc, -pct_no_hs18_24) %>% 
+  select(-binned_inc) %>% 
  
   #Make the y at the first column. 
   select(target_death_rate, everything())
@@ -86,14 +86,29 @@ summary(cancer_data_analysis)
 ```{r}
 #Choose variables we are interested in and the variables from primary literature.  
 
+#Reasons for choosing these variables:
+
+# compared the employed status
+# compare the education status
+# white has the largest percentage, so we decide to choose white.
+
+
 cancer_s = cancer_data_analysis %>%
-  select(target_death_rate, avg_ann_count, incidence_rate, study_per_cap, income_cat, age_cat, pct_private_coverage, pct_asian, percent_married, avg_household_size)
+  select(target_death_rate, avg_ann_count, incidence_rate, pct_employed16_over, pct_unemployed16_over, age_cat, pct_private_coverage, pct_white, pct_hs25_over, pct_hs18_24, study_per_cap)
 
 #Look at the covariance between the variables. 
 cor(cancer_s) %>% knitr::kable()
 
 #Look at the overall distribution and percentiles of the variables we choose.
 skimr::skim(cancer_s)
+
+cancer_s %>% 
+  ggplot(aes(x = target_death_rate)) + 
+    geom_histogram(aes(y = ..density..),  
+                   binwidth = 2, colour = "black", fill = "white") +
+    geom_density(alpha = .1) +
+    labs(
+    title = "Distribution of target death")
 
 #Make a histogram set to show the normal distribution of the variables to decide whether transformation is required. 
 cancer_s %>%
@@ -112,18 +127,18 @@ par(mar = c(4,4,1,1))
 par(mfrow = c(1,2))
 
 
-#Only when the p equals to 9, Cp=8.76 < Parameter. As a result, we decide that the number of predictors would be 9-1 = 8. So we look back to the significance table and we found that only the study_per_cap is not significant and we decided to remove it. 
+#Only when the p equals to 9, Cp=8.76 < Parameter. As a result, we decide that the number of predictors would be 9-1 = 8 or 10-1 = 9. So we look back to the significance table and we found that only the study_per_cap is not significant and we decided to remove it. 
 
-plot(2:10, rs$cp, xlab = "No of parameters", ylab = "Cp Statistic")
+plot(2:11, rs$cp, xlab = "No of parameters", ylab = "Cp Statistic")
 abline(0,1)
 
 #And at parameter equals to 9, the adjusted r square value is highest. 
 
-plot(2:10, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
+plot(2:11, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
 
 
 #So we decide this is our final model. 
-cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + income_cat + age_cat + pct_private_coverage + pct_asian + percent_married + avg_household_size, data = cancer_s)
+cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + pct_hs25_over + age_cat + pct_private_coverage + pct_white + pct_employed16_over + pct_hs18_24 + pct_unemployed16_over, data = cancer_s)
 
 summary(cancer_lm)
 
@@ -138,7 +153,7 @@ summary(cancer_lm)
 rownames(cancer_data_analysis) = cancer_data_analysis$geography
 
 #Apply the model we built. 
-cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + income_cat + age_cat + pct_private_coverage + pct_asian + percent_married + avg_household_size, data = cancer_s)
+cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + pct_hs25_over + age_cat + pct_private_coverage + pct_white + pct_employed16_over + pct_hs18_24 + pct_unemployed16_over, data = cancer_s)
 
 #Look at the studendized ourliers
 stu_res = rstandard(cancer_lm)
@@ -165,6 +180,8 @@ diffits_data$county = rownames(cancer_data_analysis)
 
 
 diffits_data %>%
-  filter(diffit > 2*sqrt(8/3047))
+  filter(diffit > 2*sqrt(9/3047))
+
+
 ```
 
