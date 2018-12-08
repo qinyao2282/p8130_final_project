@@ -40,6 +40,7 @@ cancer_na
 #Tidy the data set. 
 cancer_data_analysis = cancer_data %>% 
   janitor::clean_names() %>% 
+
   
   #Make income a dummy variable by divide up by mean of income. 
   mutate(med_income = as.numeric(med_income) ) %>% 
@@ -47,9 +48,6 @@ cancer_data_analysis = cancer_data %>%
   
   #Divide up ages by mean of age. 
   mutate(age_cat = ifelse(median_age >= mean(median_age), 1, 0)) %>%
-  
-  #Separate the county name and the state name. 
-  separate(geography, c("county", "state"), sep = ",") %>%
   
   #remove variables with a lot of na
   select(-pct_some_col18_24, -pct_employed16_over, -pct_private_coverage_alone, -med_income) %>% 
@@ -59,17 +57,20 @@ cancer_data_analysis = cancer_data %>%
  
   #Make the y at the first column. 
   select(target_death_rate, everything())
+
+  rownames(cancer_data_analysis) = cancer_data_analysis$geography
   
-  
+
  #Skim over all the variables.  
 cancer_data_analysis %>% 
-  select(-state, -county) %>% 
+  select(-geography) %>% 
+
  skimr::skim()
 
 
 #Look at the overall correlation. 
 cancer_data_analysis %>% 
-  select(-state, -county) %>% 
+  select(-geography) %>% 
   cor() %>% 
   knitr::kable()
 
@@ -122,13 +123,48 @@ plot(2:10, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
 
 
 #So we decide this is our final model. 
-lm(target_death_rate ~ avg_ann_count + incidence_rate + income_cat + age_cat + pct_private_coverage + pct_asian + percent_married + avg_household_size, data = cancer_s) %>% summary()
+cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + income_cat + age_cat + pct_private_coverage + pct_asian + percent_married + avg_household_size, data = cancer_s)
+
+summary(cancer_lm)
+
+
 ```
 
 
 ###Model Diagnostic
 
 ```{r}
+#Add the row names for the data set using the geography column. 
+rownames(cancer_data_analysis) = cancer_data_analysis$geography
 
+#Apply the model we built. 
+cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + income_cat + age_cat + pct_private_coverage + pct_asian + percent_married + avg_household_size, data = cancer_s)
+
+#Look at the studendized ourliers
+stu_res = rstandard(cancer_lm)
+
+outliers_y = stu_res[abs(stu_res) > 2.5]
+
+#Make four plots to show whether the assumptions are met. 
+par(mfrow = c(2,2))
+plot(cancer_lm)
+
+# 1000 might be an influential outlier. 
+lev = hatvalues(cancer_lm)
+lev[lev > 0.2]
+
+#   a = cancer_data_analysis[-1000,]
+
+#Calculate the DIFFITS to determine the outliers. 
+diffits_data = dffits(cancer_lm) %>%
+  data.frame()
+
+colnames(diffits_data) = c("diffit")
+
+diffits_data$county = rownames(cancer_data_analysis)
+
+
+diffits_data %>%
+  filter(diffit > 2*sqrt(8/3047))
 ```
 
