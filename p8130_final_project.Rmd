@@ -150,8 +150,6 @@ summary(cancer_lm)
 
 ```{r}
 #Add the row names for the data set using the geography column. 
-rownames(cancer_data_analysis) = cancer_data_analysis$geography
-
 #Apply the model we built. 
 cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + pct_hs25_over + age_cat + pct_private_coverage + pct_white + pct_employed16_over + pct_hs18_24 + pct_unemployed16_over, data = cancer_s)
 
@@ -176,10 +174,9 @@ diffits_data = dffits(cancer_lm) %>%
 
 colnames(diffits_data) = c("diffit")
 
-diffits_data$county = rownames(cancer_data_analysis)
 
 
-diffits_data %>%
+diffits_outlier = diffits_data %>%
   filter(diffit > 2*sqrt(9/3047))
 
 
