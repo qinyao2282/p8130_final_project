@@ -139,8 +139,6 @@ plot(2:11, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
 
 #remove the observations with na
 
-cancer_s = cancer_s %>% 
-  filter(!is.na(pct_employed16_over))
 
 #So we decide this is our final model. 
 cancer_lm = lm(target_death_rate ~ avg_ann_count + incidence_rate + pct_hs25_over + age_cat + pct_private_coverage + pct_white + pct_employed16_over + pct_hs18_24 + pct_unemployed16_over, data = cancer_s)
