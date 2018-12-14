@@ -16,6 +16,7 @@ library(leaps)
 library(caret)
 library(boot)
 library(broom)
+library(modelr)
 ```
 
 ```{r import_data}
@@ -160,29 +161,36 @@ colnames(diffits_data) = c("diffit")
 diffits_outlier = diffits_data %>%
   filter(diffit > 2*sqrt(8/3047))
 
-#not influential outlier change in coef <6%---decide to keep all obes
+#not influential outlier change in coef < 6%---decide to keep all obes
 cancer_s %>% 
   filter(!(row.names(cancer_s) %in% c("Williamsburg city, Virginia", "Madison County, Mississippi", "Woodson County, Kansas", "Aleutians West Census Area, Alaska", "Los Angeles County, California"))) %>% 
   lm(target_death_rate ~ ., data=.) %>% 
   summary()
-
 ```
 
 # Bootstrap
  
 ```{r bootstrap}
 boot.fn<-function(data, index){
-	return(coef(lm(target_death_rate ~ ., data = cancer_s, subset=index)))
+	return(coef(lm(target_death_rate ~ ., data = data, subset=index)))
 }
 
-boot(cancer_s, boot.fn, 100)
+results = boot(cancer_s, boot.fn, 10000)
+rmse(cancer_lm, cancer_s)
+plot(results, index = 1)
+results$t[ ,1]
+
+#results_raw = boot(cancer_data_analysis, boot.fn, 10000)
+#cancer_overall = lm(target_death_rate ~ ., data = cancer_data_analysis)
+#rmse(cancer_overall, cancer_data_analysis)
+#plot(results_raw, index = 1)
 ```
 
 ```{r ridge&lasso}
 #install.packages("parcor")
 library(parcor)
-library(MASS) 
-library(glmnet) 
+library(MASS)
+library(glmnet)
 library(reshape2)
 
 # Start with the full model
