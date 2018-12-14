@@ -57,8 +57,6 @@ cancer_data_analysis = cancer_data %>%
  
   #Make the y at the first column. 
   dplyr::select(target_death_rate, everything())
-
-  rownames(cancer_data_analysis) = cancer_data_analysis$geography
   
  #Skim over all the variables.  
 cancer_data_analysis %>% 
@@ -86,7 +84,12 @@ summary(cancer_data_analysis)
 # white has the largest percentage, so we decide to choose white.
 
 cancer_s = cancer_data_analysis %>%
-  dplyr::select(target_death_rate, avg_ann_count, incidence_rate, pct_unemployed16_over, age_cat, pct_private_coverage, pct_white, pct_hs25_over, pct_hs18_24)
+  dplyr::select(target_death_rate, avg_ann_count, incidence_rate, pct_unemployed16_over, age_cat, pct_private_coverage, pct_white, pct_hs25_over, pct_hs18_24, geography)
+
+rownames(cancer_s) = cancer_s$geography
+
+cancer_s = cancer_s %>% 
+  select(-geography)
 
 #Look at the covariance between the variables. 
 cor(cancer_s) %>% knitr::kable()
@@ -166,6 +169,34 @@ cancer_s %>%
   filter(!(row.names(cancer_s) %in% c("Williamsburg city, Virginia", "Madison County, Mississippi", "Woodson County, Kansas", "Aleutians West Census Area, Alaska", "Los Angeles County, California"))) %>% 
   lm(target_death_rate ~ ., data=.) %>% 
   summary()
+```
+
+# Cross-Validation
+
+```{r}
+
+# CV for our selected variables
+data_train = trainControl(method = "repeatedcv", number = 10, repeats = 10)
+# Fit the 4-variables model that we discussed in previous lectures
+model_caret <- train(target_death_rate ~ avg_ann_count + incidence_rate + pct_unemployed16_over + age_cat + pct_private_coverage + pct_white + pct_hs25_over + pct_hs18_24, data = cancer_data_analysis,
+                   trControl=data_train,
+                   method='lm',
+                   na.action=na.pass)
+model_caret
+
+# CV for more variables (including unselected)
+data_train_2 = trainControl(method = "repeatedcv", number = 10, repeats = 10)
+model_caret_2 = train(target_death_rate ~ incidence_rate + poverty_percent + median_age_female 
+                    + percent_married + pct_hs18_24 + pct_hs25_over + pct_bach_deg25_over 
+                    + pct_unemployed16_over + pct_private_coverage + pct_emp_priv_coverage 
+                    + pct_public_coverage + pct_white + pct_black + pct_other_race + birth_rate, 
+                    data = cancer_data_analysis,
+                    trControl=data_train_2,
+                    method='lm',
+                    na.action=na.pass)
+
+RMSE = mean(model_caret_2$resample$RMSE)
+RMSE
 ```
 
 # Bootstrap
@@ -316,9 +347,11 @@ legend('bottomright', inset=.005, legend=colnames(coef_lasso3_mat_sort),
 # You can separate them in different plots or play with the y-limits.
 ```
 
+bootstrap怎么interpret？
+
 lasso的意义？？？是用overall dataset还是用cancer_s?
 结果怎么interpret 彩色线图？？？
-bootstrap怎么interpret？
+
 error解决不了:Error in La.svd(x, nu, nv) : 
   BLAS/LAPACK routine 'DLASCL' gave error code -4
 
