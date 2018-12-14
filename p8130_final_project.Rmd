@@ -2,7 +2,7 @@
 title: "p8130_final_project"
 author: "Qinyao Wu"
 date: "12/6/2018"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -209,7 +209,7 @@ boot.fn<-function(data, index){
 results = boot(cancer_s, boot.fn, 10000)
 rmse(cancer_lm, cancer_s)
 plot(results, index = 1)
-results$t[ ,1]
+#results$t[ ,1]
 
 #results_raw = boot(cancer_data_analysis, boot.fn, 10000)
 #cancer_overall = lm(target_death_rate ~ ., data = cancer_data_analysis)
