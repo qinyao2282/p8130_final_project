@@ -1,36 +1,31 @@
-p8130\_final\_project
+P8130\_Final\_Project
 ================
-Qinyao Wu
+Qinyao Wu(qw2282); Huaqing Xi(hx2263); Shuo Yan(sy2825); Jianghui Lin(jl5172)
 12/6/2018
 
+Import Data
+===========
+
 ``` r
-#Import data
+# Import data
 cancer_data = read_csv("./data/Cancer_Registry.csv") 
-```
+ 
+# Count NA, modify the NA table to show the variable with NAs. 
+cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %>% 
+  data.frame() %>%
+  t() %>% 
+  data.frame()
 
-    ## Parsed with column specification:
-    ## cols(
-    ##   .default = col_double(),
-    ##   avgDeathsPerYear = col_integer(),
-    ##   medIncome = col_integer(),
-    ##   popEst2015 = col_integer(),
-    ##   binnedInc = col_character(),
-    ##   Geography = col_character()
-    ## )
-
-    ## See spec(...) for full column specifications.
-
-``` r
-#Count na, modify the na table to show the variable with NAs. 
-cancer_na = map_df(cancer_data, function(x) sum(is.na(x))) %>% data.frame() %>%
-  t() %>% data.frame()
-
-#Add column names.
+# Add column names.
 colnames(cancer_na) = "na_counts"
 
-#Make a table for na. 
-cancer_na = cancer_na %>% mutate(variable_name = row.names(cancer_na)) %>% dplyr::select(2, 1) %>%
-  filter(na_counts > 0) %>% knitr::kable()
+# Make a table for NA. 
+cancer_na = cancer_na %>% 
+  mutate(variable_name = row.names(cancer_na)) %>% 
+  dplyr::select(2, 1) %>%
+  filter(na_counts > 0) %>% 
+  knitr::kable()
+
 cancer_na
 ```
 
@@ -40,28 +35,31 @@ cancer_na
 | PctEmployed16\_Over     |         152|
 | PctPrivateCoverageAlone |         609|
 
+Tidy Data
+=========
+
 ``` r
-#Tidy the data set. 
+# Tidy the data set. 
 cancer_data_analysis = cancer_data %>% 
   janitor::clean_names() %>% 
 
-  #Make income a dummy variable by divide up by mean of income. 
+  # Make income a dummy variable by divide up by mean of income. 
   mutate(med_income = as.numeric(med_income) ) %>% 
   mutate(income_cat = ifelse(med_income >= mean(med_income), 1, 0)) %>% 
   
-  #Divide up ages by mean of age. 
+  # Divide up ages by mean of age. 
   mutate(age_cat = ifelse(median_age >= mean(median_age), 1, 0)) %>%
   
-  #remove variables with a lot of na, pct_employed16_over do not have a lot, so we decide to keep it. 
+  # Remove variables with a lot of na, pct_employed16_over do not have a lot, so we decide to keep it. 
   dplyr::select(-pct_some_col18_24, -pct_private_coverage_alone, -med_income) %>% 
   
-  #remove unrelated variables
+  # Remove unrelated variables
   dplyr::select(-binned_inc, -pct_employed16_over) %>% 
  
-  #Make the y at the first column. 
+  # Make the y at the first column. 
   dplyr::select(target_death_rate, everything())
   
- #Skim over all the variables.  
+  # Skim over all the variables.  
 cancer_data_analysis %>% 
   dplyr::select(-geography) %>% 
 
@@ -141,7 +139,7 @@ cancer_data_analysis %>%
     ##  161.2  178.1  195.2    362.8  ▁▁▆▇▂▁▁▁
 
 ``` r
-#Look at the overall correlation. 
+# Look at the overall correlation. 
 cancer_data_analysis %>% 
   dplyr::select(-geography) %>% 
   cor() %>% 
@@ -182,79 +180,31 @@ cancer_data_analysis %>%
 | age\_cat                     |           -0.1112003|       -0.0743736|              -0.0939190|       -0.0780863|    -0.1000458|        -0.1051837|       -0.0249803|    0.2824866|          0.6672081|            0.6290699|            -0.2154383|         0.2715222|          0.0369420|      0.1085555|            -0.0132222|        0.0756209|               0.0029192|               -0.0909133|               0.0353271|                -0.2519667|              0.2704758|                    -0.0265985|   0.2093192|  -0.1625032|  -0.1274637|        -0.1250206|                 0.0989325|   -0.0223198|   -0.0768851|   1.0000000|
 
 ``` r
-summary(cancer_data_analysis)
+summary(cancer_data_analysis) %>% 
+  knitr::kable()
 ```
 
-    ##  target_death_rate avg_ann_count     avg_deaths_per_year incidence_rate  
-    ##  Min.   : 59.7     Min.   :    6.0   Min.   :    3       Min.   : 201.3  
-    ##  1st Qu.:161.2     1st Qu.:   76.0   1st Qu.:   28       1st Qu.: 420.3  
-    ##  Median :178.1     Median :  171.0   Median :   61       Median : 453.5  
-    ##  Mean   :178.7     Mean   :  606.3   Mean   :  186       Mean   : 448.3  
-    ##  3rd Qu.:195.2     3rd Qu.:  518.0   3rd Qu.:  149       3rd Qu.: 480.9  
-    ##  Max.   :362.8     Max.   :38150.0   Max.   :14010       Max.   :1206.9  
-    ##   pop_est2015       poverty_percent study_per_cap       median_age    
-    ##  Min.   :     827   Min.   : 3.20   Min.   :   0.00   Min.   : 22.30  
-    ##  1st Qu.:   11684   1st Qu.:12.15   1st Qu.:   0.00   1st Qu.: 37.70  
-    ##  Median :   26643   Median :15.90   Median :   0.00   Median : 41.00  
-    ##  Mean   :  102637   Mean   :16.88   Mean   : 155.40   Mean   : 45.27  
-    ##  3rd Qu.:   68671   3rd Qu.:20.40   3rd Qu.:  83.65   3rd Qu.: 44.00  
-    ##  Max.   :10170292   Max.   :47.40   Max.   :9762.31   Max.   :624.00  
-    ##  median_age_male median_age_female  geography         avg_household_size
-    ##  Min.   :22.40   Min.   :22.30     Length:3047        Min.   :0.0221    
-    ##  1st Qu.:36.35   1st Qu.:39.10     Class :character   1st Qu.:2.3700    
-    ##  Median :39.60   Median :42.40     Mode  :character   Median :2.5000    
-    ##  Mean   :39.57   Mean   :42.15                        Mean   :2.4797    
-    ##  3rd Qu.:42.50   3rd Qu.:45.30                        3rd Qu.:2.6300    
-    ##  Max.   :64.70   Max.   :65.70                        Max.   :3.9700    
-    ##  percent_married pct_no_hs18_24   pct_hs18_24   pct_bach_deg18_24
-    ##  Min.   :23.10   Min.   : 0.00   Min.   : 0.0   Min.   : 0.000   
-    ##  1st Qu.:47.75   1st Qu.:12.80   1st Qu.:29.2   1st Qu.: 3.100   
-    ##  Median :52.40   Median :17.10   Median :34.7   Median : 5.400   
-    ##  Mean   :51.77   Mean   :18.22   Mean   :35.0   Mean   : 6.158   
-    ##  3rd Qu.:56.40   3rd Qu.:22.70   3rd Qu.:40.7   3rd Qu.: 8.200   
-    ##  Max.   :72.50   Max.   :64.10   Max.   :72.5   Max.   :51.800   
-    ##  pct_hs25_over   pct_bach_deg25_over pct_unemployed16_over
-    ##  Min.   : 7.50   Min.   : 2.50       Min.   : 0.400       
-    ##  1st Qu.:30.40   1st Qu.: 9.40       1st Qu.: 5.500       
-    ##  Median :35.30   Median :12.30       Median : 7.600       
-    ##  Mean   :34.80   Mean   :13.28       Mean   : 7.852       
-    ##  3rd Qu.:39.65   3rd Qu.:16.10       3rd Qu.: 9.700       
-    ##  Max.   :54.80   Max.   :42.20       Max.   :29.400       
-    ##  pct_private_coverage pct_emp_priv_coverage pct_public_coverage
-    ##  Min.   :22.30        Min.   :13.5          Min.   :11.20      
-    ##  1st Qu.:57.20        1st Qu.:34.5          1st Qu.:30.90      
-    ##  Median :65.10        Median :41.1          Median :36.30      
-    ##  Mean   :64.35        Mean   :41.2          Mean   :36.25      
-    ##  3rd Qu.:72.10        3rd Qu.:47.7          3rd Qu.:41.55      
-    ##  Max.   :92.30        Max.   :70.7          Max.   :65.10      
-    ##  pct_public_coverage_alone   pct_white        pct_black      
-    ##  Min.   : 2.60             Min.   : 10.20   Min.   : 0.0000  
-    ##  1st Qu.:14.85             1st Qu.: 77.30   1st Qu.: 0.6207  
-    ##  Median :18.80             Median : 90.06   Median : 2.2476  
-    ##  Mean   :19.24             Mean   : 83.65   Mean   : 9.1080  
-    ##  3rd Qu.:23.10             3rd Qu.: 95.45   3rd Qu.:10.5097  
-    ##  Max.   :46.60             Max.   :100.00   Max.   :85.9478  
-    ##    pct_asian       pct_other_race    pct_married_households
-    ##  Min.   : 0.0000   Min.   : 0.0000   Min.   :22.99         
-    ##  1st Qu.: 0.2542   1st Qu.: 0.2952   1st Qu.:47.76         
-    ##  Median : 0.5498   Median : 0.8262   Median :51.67         
-    ##  Mean   : 1.2540   Mean   : 1.9835   Mean   :51.24         
-    ##  3rd Qu.: 1.2210   3rd Qu.: 2.1780   3rd Qu.:55.40         
-    ##  Max.   :42.6194   Max.   :41.9303   Max.   :78.08         
-    ##    birth_rate       income_cat        age_cat      
-    ##  Min.   : 0.000   Min.   :0.0000   Min.   :0.0000  
-    ##  1st Qu.: 4.521   1st Qu.:0.0000   1st Qu.:0.0000  
-    ##  Median : 5.381   Median :0.0000   Median :0.0000  
-    ##  Mean   : 5.640   Mean   :0.4306   Mean   :0.1844  
-    ##  3rd Qu.: 6.494   3rd Qu.:1.0000   3rd Qu.:0.0000  
-    ##  Max.   :21.326   Max.   :1.0000   Max.   :1.0000
+|     | target\_death\_rate | avg\_ann\_count | avg\_deaths\_per\_year | incidence\_rate |  pop\_est2015  | poverty\_percent | study\_per\_cap |   median\_age  | median\_age\_male | median\_age\_female |     geography    | avg\_household\_size | percent\_married | pct\_no\_hs18\_24 | pct\_hs18\_24 | pct\_bach\_deg18\_24 | pct\_hs25\_over | pct\_bach\_deg25\_over | pct\_unemployed16\_over | pct\_private\_coverage | pct\_emp\_priv\_coverage | pct\_public\_coverage | pct\_public\_coverage\_alone |   pct\_white   |    pct\_black   |    pct\_asian   | pct\_other\_race | pct\_married\_households |   birth\_rate  |   income\_cat  |    age\_cat    |
+|-----|:--------------------|:----------------|:-----------------------|:----------------|:--------------:|:-----------------|:----------------|:--------------:|:------------------|:--------------------|:----------------:|:---------------------|:-----------------|:------------------|:-------------:|:---------------------|:----------------|:-----------------------|:------------------------|:-----------------------|:-------------------------|:----------------------|:-----------------------------|:--------------:|:---------------:|:---------------:|:-----------------|:-------------------------|:--------------:|:--------------:|:--------------:|
+|     | Min. : 59.7         | Min. : 6.0      | Min. : 3               | Min. : 201.3    |   Min. : 827   | Min. : 3.20      | Min. : 0.00     |  Min. : 22.30  | Min. :22.40       | Min. :22.30         |    Length:3047   | Min. :0.0221         | Min. :23.10      | Min. : 0.00       |   Min. : 0.0  | Min. : 0.000         | Min. : 7.50     | Min. : 2.50            | Min. : 0.400            | Min. :22.30            | Min. :13.5               | Min. :11.20           | Min. : 2.60                  |  Min. : 10.20  |  Min. : 0.0000  |  Min. : 0.0000  | Min. : 0.0000    | Min. :22.99              |  Min. : 0.000  |  Min. :0.0000  |  Min. :0.0000  |
+|     | 1st Qu.:161.2       | 1st Qu.: 76.0   | 1st Qu.: 28            | 1st Qu.: 420.3  | 1st Qu.: 11684 | 1st Qu.:12.15    | 1st Qu.: 0.00   | 1st Qu.: 37.70 | 1st Qu.:36.35     | 1st Qu.:39.10       | Class :character | 1st Qu.:2.3700       | 1st Qu.:47.75    | 1st Qu.:12.80     |  1st Qu.:29.2 | 1st Qu.: 3.100       | 1st Qu.:30.40   | 1st Qu.: 9.40          | 1st Qu.: 5.500          | 1st Qu.:57.20          | 1st Qu.:34.5             | 1st Qu.:30.90         | 1st Qu.:14.85                | 1st Qu.: 77.30 | 1st Qu.: 0.6207 | 1st Qu.: 0.2542 | 1st Qu.: 0.2952  | 1st Qu.:47.76            | 1st Qu.: 4.521 | 1st Qu.:0.0000 | 1st Qu.:0.0000 |
+|     | Median :178.1       | Median : 171.0  | Median : 61            | Median : 453.5  | Median : 26643 | Median :15.90    | Median : 0.00   | Median : 41.00 | Median :39.60     | Median :42.40       |  Mode :character | Median :2.5000       | Median :52.40    | Median :17.10     |  Median :34.7 | Median : 5.400       | Median :35.30   | Median :12.30          | Median : 7.600          | Median :65.10          | Median :41.1             | Median :36.30         | Median :18.80                | Median : 90.06 | Median : 2.2476 | Median : 0.5498 | Median : 0.8262  | Median :51.67            | Median : 5.381 | Median :0.0000 | Median :0.0000 |
+|     | Mean :178.7         | Mean : 606.3    | Mean : 186             | Mean : 448.3    |  Mean : 102637 | Mean :16.88      | Mean : 155.40   |  Mean : 45.27  | Mean :39.57       | Mean :42.15         |        NA        | Mean :2.4797         | Mean :51.77      | Mean :18.22       |   Mean :35.0  | Mean : 6.158         | Mean :34.80     | Mean :13.28            | Mean : 7.852            | Mean :64.35            | Mean :41.2               | Mean :36.25           | Mean :19.24                  |  Mean : 83.65  |  Mean : 9.1080  |  Mean : 1.2540  | Mean : 1.9835    | Mean :51.24              |  Mean : 5.640  |  Mean :0.4306  |  Mean :0.1844  |
+|     | 3rd Qu.:195.2       | 3rd Qu.: 518.0  | 3rd Qu.: 149           | 3rd Qu.: 480.9  | 3rd Qu.: 68671 | 3rd Qu.:20.40    | 3rd Qu.: 83.65  | 3rd Qu.: 44.00 | 3rd Qu.:42.50     | 3rd Qu.:45.30       |        NA        | 3rd Qu.:2.6300       | 3rd Qu.:56.40    | 3rd Qu.:22.70     |  3rd Qu.:40.7 | 3rd Qu.: 8.200       | 3rd Qu.:39.65   | 3rd Qu.:16.10          | 3rd Qu.: 9.700          | 3rd Qu.:72.10          | 3rd Qu.:47.7             | 3rd Qu.:41.55         | 3rd Qu.:23.10                | 3rd Qu.: 95.45 | 3rd Qu.:10.5097 | 3rd Qu.: 1.2210 | 3rd Qu.: 2.1780  | 3rd Qu.:55.40            | 3rd Qu.: 6.494 | 3rd Qu.:1.0000 | 3rd Qu.:0.0000 |
+|     | Max. :362.8         | Max. :38150.0   | Max. :14010            | Max. :1206.9    | Max. :10170292 | Max. :47.40      | Max. :9762.31   |  Max. :624.00  | Max. :64.70       | Max. :65.70         |        NA        | Max. :3.9700         | Max. :72.50      | Max. :64.10       |   Max. :72.5  | Max. :51.800         | Max. :54.80     | Max. :42.20            | Max. :29.400            | Max. :92.30            | Max. :70.7               | Max. :65.10           | Max. :46.60                  |  Max. :100.00  |  Max. :85.9478  |  Max. :42.6194  | Max. :41.9303    | Max. :78.08              |  Max. :21.326  |  Max. :1.0000  |  Max. :1.0000  |
+
+Variable Selection
+==================
 
 ``` r
-#Choose variables we are interested in and the variables from primary literature.  
-#Reasons for choosing these variables:
-# compared the employed status
+# According to forward and backward elimination, it provides a "best" model with 16-20 variables, which is too much for our goal and violate the "Parismony" standard---LESS IS BETTER!!
+
+# Choose variables we are interested in and the variables from previous literature.  
+# Reasons for choosing these variables:
+# compare the employed status
 # compare the education status
-# white has the largest percentage, so we decide to choose white.
+# White has the largest percentage among all races in US, so we decide to choose white.
+
 cancer_s = cancer_data_analysis %>%
   dplyr::select(target_death_rate, avg_ann_count, incidence_rate, pct_unemployed16_over, age_cat, pct_private_coverage, pct_white, pct_hs25_over, pct_hs18_24, geography, income_cat, study_per_cap)
 rownames(cancer_s) = cancer_s$geography
@@ -265,7 +215,7 @@ rownames(cancer_s) = cancer_s$geography
 ``` r
 cancer_s = cancer_s %>% 
   dplyr::select(-geography)
-#Look at the covariance between the variables. 
+# Look at the covariance between the variables. 
 cor(cancer_s) %>% knitr::kable()
 ```
 
@@ -284,7 +234,7 @@ cor(cancer_s) %>% knitr::kable()
 | study\_per\_cap         |           -0.0222850|        0.0820714|        0.0772826|               -0.0319568|  -0.0249803|               0.0925447|   0.0232910|       -0.0851280|     -0.0570351|    0.0619825|        1.0000000|
 
 ``` r
-#Look at the overall distribution and percentiles of the variables we choose.
+# Look at the overall distribution and percentiles of the variables we choose.
 skimr::skim(cancer_s)
 ```
 
@@ -330,7 +280,7 @@ cancer_s %>%
 ![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-2-1.png)
 
 ``` r
-#Make a histogram set to show the normal distribution of the variables to decide whether transformation is required. 
+# Make a histogram set to show the normal distribution of the variables to decide whether transformation is required. 
 cancer_s %>%
   dplyr::select(-age_cat) %>%
   gather(measure, value) %>%
@@ -344,7 +294,7 @@ cancer_s %>%
 ![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-2-2.png)
 
 ``` r
-#Find the significant variables in each number of parameters. Used as a reference for later removal of variables. 
+# Find the significant variables in each number of parameters. Used as a reference for later removal of variables. 
 criterion_subset = regsubsets(target_death_rate ~ ., data = cancer_s, nvmax = 34)
    (rs = summary(criterion_subset))
 ```
@@ -402,8 +352,7 @@ criterion_subset = regsubsets(target_death_rate ~ ., data = cancer_s, nvmax = 34
 ``` r
 par(mar = c(4,4,1,1))
 par(mfrow = c(1,2))
-## Only 8， 9 and 10 variables have a cp smaller or equal to the number of parameter. And between these two, 8-variable model has a smaller cp, as a result, we decide to choose the 8-varable model which is the model without study per cap. Since income_cat is correlated to both unemployment and health insurance coverage, it is removed too. 
-
+# Only 8， 9 and 10 variables have a cp smaller or equal to the number of parameter. And between these two, 8-variable model has a smaller cp, as a result, we decide to choose the 8-varable model which is the model without study per cap. Since income_cat is correlated to both unemployment and health insurance coverage, it is removed too. 
 
 plot(2:11, rs$cp, xlab = "No of parameters", ylab = "Cp Statistic")
 abline(0,1)
@@ -414,8 +363,7 @@ plot(2:11, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
 ![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-2-3.png)
 
 ``` r
-#So we decide this is our final model. 
-
+# So we decide this is our final model. 
 cancer_s = cancer_s %>% 
   dplyr::select(-study_per_cap, -income_cat)
 
@@ -449,164 +397,8 @@ summary(cancer_lm)
     ## Multiple R-squared:  0.4802, Adjusted R-squared:  0.4788 
     ## F-statistic: 350.8 on 8 and 3038 DF,  p-value: < 2.2e-16
 
-### Model Diagnostic
-
-``` r
-#Add the row names for the data set using the geography column. 
-#Apply the model we built. 
-cancer_lm = lm(target_death_rate ~ ., data = cancer_s)
-
-## outlier in Y-Look at the studendized ourliers
-stu_res = rstandard(cancer_lm)
-outliers_y = stu_res[abs(stu_res) > 2.5]
-count(as.data.frame(outliers_y))
-```
-
-    ## # A tibble: 1 x 1
-    ##       n
-    ##   <int>
-    ## 1    76
-
-``` r
-#Make four plots to show whether the assumptions are met. 
-par(mfrow = c(2,2))
-plot(cancer_lm)
-```
-
-![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-3-1.png)
-
-``` r
-# 1000 might be an influential outlier. 
-lev = hatvalues(cancer_lm)
-lev[lev > 0.2]
-```
-
-    ## Los Angeles County, California 
-    ##                      0.2548022
-
-``` r
-#a = cancer_data_analysis[-1000,]
-
-#Calculate the DIFFITS to determine the outliers. 
-diffits_data = dffits(cancer_lm) %>%
-  data.frame()
-
-colnames(diffits_data) = c("diffit")
-
-diffits_outlier = diffits_data %>%
-  filter(diffit > 2*sqrt(8/3047))
-
-#not influential outlier change in coef < 6%---decide to keep all obes
-cancer_s %>% 
-  filter(!(row.names(cancer_s) %in% c("Williamsburg city, Virginia", "Madison County, Mississippi", "Woodson County, Kansas", "Aleutians West Census Area, Alaska", "Los Angeles County, California"))) %>% 
-  lm(target_death_rate ~ ., data=.) %>% 
-  summary()
-```
-
-    ## 
-    ## Call:
-    ## lm(formula = target_death_rate ~ ., data = .)
-    ## 
-    ## Residuals:
-    ##    Min     1Q Median     3Q    Max 
-    ## -94.26 -11.90   0.06  11.16  81.74 
-    ## 
-    ## Coefficients:
-    ##                         Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)           79.5340895  5.0576987  15.725  < 2e-16 ***
-    ## avg_ann_count         -0.0015694  0.0003114  -5.039 4.95e-07 ***
-    ## incidence_rate         0.2291456  0.0070425  32.537  < 2e-16 ***
-    ## pct_unemployed16_over  0.9512827  0.1443813   6.589 5.21e-11 ***
-    ## age_cat               -5.7691627  0.9460907  -6.098 1.21e-09 ***
-    ## pct_private_coverage  -0.6748353  0.0480761 -14.037  < 2e-16 ***
-    ## pct_white             -0.0654012  0.0275992  -2.370 0.017866 *  
-    ## pct_hs25_over          0.9794635  0.0619827  15.802  < 2e-16 ***
-    ## pct_hs18_24            0.1622660  0.0446564   3.634 0.000284 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 19.62 on 3033 degrees of freedom
-    ## Multiple R-squared:  0.4965, Adjusted R-squared:  0.4951 
-    ## F-statistic: 373.8 on 8 and 3033 DF,  p-value: < 2.2e-16
-
-Cross-Validation
-================
-
-``` r
-# CV for our selected variables
-data_train = trainControl(method = "repeatedcv", number = 10, repeats = 10)
-# Fit the 4-variables model that we discussed in previous lectures
-model_caret <- train(target_death_rate ~ avg_ann_count + incidence_rate + pct_unemployed16_over + age_cat + pct_private_coverage + pct_white + pct_hs25_over + pct_hs18_24, data = cancer_data_analysis,
-                   trControl=data_train,
-                   method='lm',
-                   na.action=na.pass)
-model_caret
-```
-
-    ## Linear Regression 
-    ## 
-    ## 3047 samples
-    ##    8 predictor
-    ## 
-    ## No pre-processing
-    ## Resampling: Cross-Validated (10 fold, repeated 10 times) 
-    ## Summary of sample sizes: 2743, 2742, 2743, 2743, 2743, 2742, ... 
-    ## Resampling results:
-    ## 
-    ##   RMSE      Rsquared   MAE     
-    ##   20.06569  0.4776544  14.97207
-    ## 
-    ## Tuning parameter 'intercept' was held constant at a value of TRUE
-
-``` r
-# CV for more variables (including unselected)
-data_train_2 = trainControl(method = "repeatedcv", number = 10, repeats = 10)
-model_caret_2 = train(target_death_rate ~ incidence_rate + poverty_percent + median_age_female 
-                    + percent_married + pct_hs18_24 + pct_hs25_over + pct_bach_deg25_over 
-                    + pct_unemployed16_over + pct_private_coverage + pct_emp_priv_coverage 
-                    + pct_public_coverage + pct_white + pct_black + pct_other_race + birth_rate, 
-                    data = cancer_data_analysis,
-                    trControl=data_train_2,
-                    method='lm',
-                    na.action=na.pass)
-
-RMSE = mean(model_caret_2$resample$RMSE)
-RMSE
-```
-
-    ## [1] 19.65293
-
-Bootstrap
-=========
-
-``` r
-boot.fn<-function(data, index){
-    return(coef(lm(target_death_rate ~ ., data = data, subset=index)))
-}
-
-results = boot(cancer_s, boot.fn, 10000)
-rmse(cancer_lm, cancer_s)
-```
-
-    ## [1] 20.00552
-
-``` r
-plot(results, index = 1)
-```
-
-![](p8130_final_project_files/figure-markdown_github/bootstrap-1.png)
-
-``` r
-#results$t[ ,1]
-
-#results_raw = boot(cancer_data_analysis, boot.fn, 10000)
-#cancer_overall = lm(target_death_rate ~ ., data = cancer_data_analysis)
-#rmse(cancer_overall, cancer_data_analysis)
-#plot(results_raw, index = 1)
-```
-
-Lasso Model Selection
----------------------
+Lasso Regression
+----------------
 
 ``` r
 cancer_data_lasso = 
@@ -623,7 +415,7 @@ cv.out <- cv.glmnet(X[train,],Y[train]) # all possible lambda values
 plot(cv.out) # CV process
 ```
 
-![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](p8130_final_project_files/figure-markdown_github/lasso-1.png)
 
 ``` r
 cv.out$lambda.min
@@ -686,7 +478,7 @@ cv.out <- cv.glmnet(X1[train,],Y1[train]) # all possible lambda values
 plot(cv.out) # CV process
 ```
 
-![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-5-2.png)
+![](p8130_final_project_files/figure-markdown_github/lasso-2.png)
 
 ``` r
 cv.out$lambda.min
@@ -734,49 +526,7 @@ Y.test<-Y[test]
 # Cross-validation
 set.seed(2)
 cv.out<-cv.glmnet(X[train,],Y[train], alpha=1)
-coef(cv.out)
-```
 
-    ## 30 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                     1
-    ## (Intercept)               96.14114425
-    ## avg_ann_count              .         
-    ## avg_deaths_per_year        .         
-    ## incidence_rate             0.18527759
-    ## pop_est2015                .         
-    ## poverty_percent            0.40515276
-    ## study_per_cap              .         
-    ## median_age                 .         
-    ## median_age_male            .         
-    ## median_age_female          .         
-    ## avg_household_size         .         
-    ## percent_married            .         
-    ## pct_no_hs18_24             .         
-    ## pct_hs18_24                0.11847224
-    ## pct_bach_deg18_24          .         
-    ## pct_hs25_over              0.39860084
-    ## pct_bach_deg25_over       -1.09751180
-    ## pct_unemployed16_over      0.45536881
-    ## pct_private_coverage      -0.06957421
-    ## pct_emp_priv_coverage      .         
-    ## pct_public_coverage        .         
-    ## pct_public_coverage_alone  0.27648115
-    ## pct_white                 -0.01683021
-    ## pct_black                  .         
-    ## pct_asian                  .         
-    ## pct_other_race            -0.27348988
-    ## pct_married_households    -0.21612975
-    ## birth_rate                -0.29791564
-    ## income_cat                -0.87217677
-    ## age_cat                   -2.48467256
-
-``` r
-plot(cv.out)
-```
-
-![](p8130_final_project_files/figure-markdown_github/ridge&lasso-1.png)
-
-``` r
 best.lambda<-cv.out$lambda.min
 best.lambda
 ```
@@ -839,70 +589,188 @@ rownames(coef_lasso3_mat) <- grid
 coef_lasso3_mat_sort <- coef_lasso3_mat[order(grid),]
 par(mfrow = c(1,1))
 matplot(coef_lasso3_mat_sort,type="l",lty=1,xlim=c(0,50),
-        xlab="lambda",ylab="coefficient",col=1:29) 
+        xlab="lambda",ylab="coefficient",col=1:29)
 legend('bottomright', inset=.005, legend=colnames(coef_lasso3_mat_sort), 
        pch=4, cex=0.4, col=1:29)
 ```
 
-![](p8130_final_project_files/figure-markdown_github/ridge&lasso-2.png)
+![](p8130_final_project_files/figure-markdown_github/ridge&lasso-1.png)
+
+Model Diagnostic
+================
 
 ``` r
-lasso3 <- glmnet(X,Y, alpha=1, lambda=grid)
+# Add the row names for the data set using the geography column. 
+# Apply the model we built. 
+cancer_lm = lm(target_death_rate ~ ., data = cancer_s)
 
-
-fit = cv.glmnet(X, Y)
-plot(fit,label = TRUE)
+# Outlier in Y-Look at the studendized ourliers
+stu_res = rstandard(cancer_lm)
+outliers_y = stu_res[abs(stu_res) > 2.5]
+count(as.data.frame(outliers_y))
 ```
 
-    ## Warning in plot.window(...): "label" is not a graphical parameter
-
-    ## Warning in plot.xy(xy, type, ...): "label" is not a graphical parameter
-
-    ## Warning in axis(side = side, at = at, labels = labels, ...): "label" is not
-    ## a graphical parameter
-
-    ## Warning in axis(side = side, at = at, labels = labels, ...): "label" is not
-    ## a graphical parameter
-
-    ## Warning in box(...): "label" is not a graphical parameter
-
-    ## Warning in title(...): "label" is not a graphical parameter
-
-![](p8130_final_project_files/figure-markdown_github/ridge&lasso-3.png)
+    ## # A tibble: 1 x 1
+    ##       n
+    ##   <int>
+    ## 1    76
 
 ``` r
-coef(fit,s=cv.out$lambda.1se)
+# Make four plots to show whether the assumptions are met. 
+par(mfrow = c(2,2))
+plot(cancer_lm)
 ```
 
-    ## 30 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                     1
-    ## (Intercept)               97.15875158
-    ## avg_ann_count              .         
-    ## avg_deaths_per_year        .         
-    ## incidence_rate             0.18120750
-    ## pop_est2015                .         
-    ## poverty_percent            0.48234893
-    ## study_per_cap              .         
-    ## median_age                 .         
-    ## median_age_male            .         
-    ## median_age_female          .         
-    ## avg_household_size         .         
-    ## percent_married            .         
-    ## pct_no_hs18_24             .         
-    ## pct_hs18_24                0.17039760
-    ## pct_bach_deg18_24          .         
-    ## pct_hs25_over              0.28543182
-    ## pct_bach_deg25_over       -1.04427657
-    ## pct_unemployed16_over      0.38039363
-    ## pct_private_coverage      -0.08665736
-    ## pct_emp_priv_coverage      .         
-    ## pct_public_coverage        .         
-    ## pct_public_coverage_alone  0.22624271
-    ## pct_white                  .         
-    ## pct_black                  .         
-    ## pct_asian                  .         
-    ## pct_other_race            -0.41733702
-    ## pct_married_households    -0.18629967
-    ## birth_rate                -0.08656179
-    ## income_cat                -0.95461388
-    ## age_cat                   -2.07827832
+![](p8130_final_project_files/figure-markdown_github/unnamed-chunk-3-1.png)
+
+``` r
+# 1000 might be an influential outlier. 
+lev = hatvalues(cancer_lm)
+lev[lev > 0.2]
+```
+
+    ## Los Angeles County, California 
+    ##                      0.2548022
+
+``` r
+#Calculate the DIFFITS to determine the outliers. 
+diffits_data = dffits(cancer_lm) %>%
+  data.frame()
+
+colnames(diffits_data) = c("diffit")
+
+diffits_outlier = diffits_data %>%
+  filter(diffit > 2*sqrt(8/3047))
+
+head(diffits_outlier)
+```
+
+    ##      diffit
+    ## 1 0.1641007
+    ## 2 0.1573107
+    ## 3 0.1339162
+    ## 4 0.1252276
+    ## 5 0.2533823
+    ## 6 0.2438789
+
+``` r
+# NO influential outlier---change in coef < 6%---decide to keep all observations
+cancer_s %>% 
+  filter(!(row.names(cancer_s) %in% c("Williamsburg city, Virginia", "Madison County, Mississippi", "Woodson County, Kansas", "Aleutians West Census Area, Alaska", "Los Angeles County, California"))) %>% 
+  lm(target_death_rate ~ ., data=.) %>% 
+  summary()
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = target_death_rate ~ ., data = .)
+    ## 
+    ## Residuals:
+    ##    Min     1Q Median     3Q    Max 
+    ## -94.26 -11.90   0.06  11.16  81.74 
+    ## 
+    ## Coefficients:
+    ##                         Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)           79.5340895  5.0576987  15.725  < 2e-16 ***
+    ## avg_ann_count         -0.0015694  0.0003114  -5.039 4.95e-07 ***
+    ## incidence_rate         0.2291456  0.0070425  32.537  < 2e-16 ***
+    ## pct_unemployed16_over  0.9512827  0.1443813   6.589 5.21e-11 ***
+    ## age_cat               -5.7691627  0.9460907  -6.098 1.21e-09 ***
+    ## pct_private_coverage  -0.6748353  0.0480761 -14.037  < 2e-16 ***
+    ## pct_white             -0.0654012  0.0275992  -2.370 0.017866 *  
+    ## pct_hs25_over          0.9794635  0.0619827  15.802  < 2e-16 ***
+    ## pct_hs18_24            0.1622660  0.0446564   3.634 0.000284 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 19.62 on 3033 degrees of freedom
+    ## Multiple R-squared:  0.4965, Adjusted R-squared:  0.4951 
+    ## F-statistic: 373.8 on 8 and 3033 DF,  p-value: < 2.2e-16
+
+Model Validation
+================
+
+Cross-Validation
+----------------
+
+``` r
+# CV for our selected variables
+data_train = trainControl(method = "repeatedcv", number = 10, repeats = 10)
+# Fit the 4-variables model that we discussed in previous lectures
+model_caret <- train(target_death_rate ~ avg_ann_count + incidence_rate + pct_unemployed16_over + age_cat + pct_private_coverage + pct_white + pct_hs25_over + pct_hs18_24, data = cancer_data_analysis,
+                   trControl=data_train,
+                   method='lm',
+                   na.action=na.pass)
+model_caret
+```
+
+    ## Linear Regression 
+    ## 
+    ## 3047 samples
+    ##    8 predictor
+    ## 
+    ## No pre-processing
+    ## Resampling: Cross-Validated (10 fold, repeated 10 times) 
+    ## Summary of sample sizes: 2742, 2742, 2742, 2742, 2743, 2743, ... 
+    ## Resampling results:
+    ## 
+    ##   RMSE     Rsquared   MAE     
+    ##   20.0642  0.4779867  14.96743
+    ## 
+    ## Tuning parameter 'intercept' was held constant at a value of TRUE
+
+``` r
+model_caret$results$RMSE #20.06974
+```
+
+    ## [1] 20.0642
+
+``` r
+# CV for more variables (including unselected)
+data_train_2 = trainControl(method = "repeatedcv", number = 10, repeats = 10)
+model_caret_2 = train(target_death_rate ~ incidence_rate + poverty_percent + median_age_female 
+                    + percent_married + pct_hs18_24 + pct_hs25_over + pct_bach_deg25_over 
+                    + pct_unemployed16_over + pct_private_coverage + pct_emp_priv_coverage 
+                    + pct_public_coverage + pct_white + pct_black + pct_other_race + birth_rate, 
+                    data = cancer_data_analysis,
+                    trControl=data_train_2,
+                    method='lm',
+                    na.action=na.pass)
+model_caret_2
+```
+
+    ## Linear Regression 
+    ## 
+    ## 3047 samples
+    ##   15 predictor
+    ## 
+    ## No pre-processing
+    ## Resampling: Cross-Validated (10 fold, repeated 10 times) 
+    ## Summary of sample sizes: 2740, 2743, 2743, 2743, 2742, 2742, ... 
+    ## Resampling results:
+    ## 
+    ##   RMSE      Rsquared   MAE     
+    ##   19.63685  0.4995567  14.53166
+    ## 
+    ## Tuning parameter 'intercept' was held constant at a value of TRUE
+
+``` r
+model_caret_2$results$RMSE #19.64676
+```
+
+    ## [1] 19.63685
+
+Bootstrap
+---------
+
+``` r
+boot.fn<-function(data, index){
+    return(coef(lm(target_death_rate ~ ., data = data, subset=index)))
+}
+
+results = boot(cancer_s, boot.fn, 10000)
+
+plot(results, index = 1)
+```
+
+![](p8130_final_project_files/figure-markdown_github/bootstrap-1.png)
